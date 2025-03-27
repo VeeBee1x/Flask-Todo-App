@@ -39,7 +39,7 @@ def create_app():
     app.register_blueprint(auth, url_prefix='/')
     
     # Create database
-    from .models import User, Todo, Activity
+    from .models import User, Todo
     with app.app_context():
         db.create_all()
     
