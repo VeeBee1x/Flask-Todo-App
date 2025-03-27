@@ -12,4 +12,9 @@ services:
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
-        sync: false 
+        sync: false
+    databases:
+      - name: todo_db
+        databaseName: todo_db
+        user: todo_db
+        plan: free 
