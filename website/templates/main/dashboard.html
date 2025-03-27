@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Todo List App{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Task Creation Form -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Add New Task</h2>
+        <form id="taskForm" class="space-y-4">
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-700">Title *</label>
+                <input type="text" id="title" name="title" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+            </div>
+            
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                <textarea id="description" name="description" rows="2"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="due_date" class="block text-sm font-medium text-gray-700">Due Date</label>
+                    <input type="date" id="due_date" name="due_date"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                </div>
+                
+                <div>
+                    <label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
+                    <select id="priority" name="priority"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="px-4 py-2 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Add Task
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Task List -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">My Tasks</h2>
+            <div class="flex space-x-2">
+                <select id="filter" class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <select id="sort" class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <option value="created_at">Created Date</option>
+                    <option value="due_date">Due Date</option>
+                    <option value="priority">Priority</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="taskList" class="space-y-4">
+            {% for task in tasks %}
+            <div class="task-item border rounded-lg p-4 {% if task.completed %}bg-gray-50{% endif %}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start space-x-3">
+                        <input type="checkbox" 
+                               class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                               {% if task.completed %}checked{% endif %}
+                               data-task-id="{{ task.id }}">
+                        <div>
+                            <h3 class="text-lg font-medium {% if task.completed %}line-through text-gray-500{% endif %}">
+                                {{ task.title }}
+                            </h3>
+                            {% if task.description %}
+                            <p class="text-gray-600 mt-1">{{ task.description }}</p>
+                            {% endif %}
+                            <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                                {% if task.due_date %}
+                                <span>Due: {{ task.due_date.strftime('%Y-%m-%d') }}</span>
+                                {% endif %}
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if task.priority == 'high' %}bg-red-100 text-red-800
+                                    {% elif task.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ task.priority }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="share-task text-gray-400 hover:text-gray-500" data-task-id="{{ task.id }}">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                            </svg>
+                        </button>
+                        <button class="delete-task text-gray-400 hover:text-red-500" data-task-id="{{ task.id }}">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Share Task Modal -->
+<div id="shareModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900">Share Task</h3>
+            <form id="shareForm" class="mt-4">
+                <input type="hidden" id="shareTaskId">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                    <input type="text" id="username" name="username" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                </div>
+                <div class="mt-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="can_edit" class="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <span class="ml-2 text-sm text-gray-700">Allow editing</span>
+                    </label>
+                </div>
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button type="button" id="cancelShare" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Share
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const socket = io();
+    const taskForm = document.getElementById('taskForm');
+    const taskList = document.getElementById('taskList');
+    const shareModal = document.getElementById('shareModal');
+    const shareForm = document.getElementById('shareForm');
+    const cancelShare = document.getElementById('cancelShare');
+    const shareTaskId = document.getElementById('shareTaskId');
+    const filter = document.getElementById('filter');
+    const sort = document.getElementById('sort');
+
+    // Socket.io event handlers
+    socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+    });
+
+    socket.on('task_create', (data) => {
+        console.log('Task created:', data);
+        location.reload();
+    });
+
+    socket.on('task_update', (data) => {
+        console.log('Task updated:', data);
+        location.reload();
+    });
+
+    socket.on('task_delete', (data) => {
+        console.log('Task deleted:', data);
+        location.reload();
+    });
+
+    // Task form submission
+    taskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(taskForm);
+        const data = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            due_date: formData.get('due_date'),
+            priority: formData.get('priority')
+        };
+
+        try {
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                taskForm.reset();
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Failed to create task');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to create task');
+        }
+    });
+
+    // Task completion toggle
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', async (e) => {
+            const taskId = e.target.dataset.taskId;
+            const completed = e.target.checked;
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ completed })
+                });
+
+                if (!response.ok) {
+                    e.target.checked = !completed;
+                    const error = await response.json();
+                    alert(error.error || 'Failed to update task');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                e.target.checked = !completed;
+                alert('Failed to update task');
+            }
+        });
+    });
+
+    // Task deletion
+    document.querySelectorAll('.delete-task').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+
+            const taskId = e.currentTarget.dataset.taskId;
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to delete task');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete task');
+            }
+        });
+    });
+
+    // Share task modal
+    document.querySelectorAll('.share-task').forEach(button => {
+        button.addEventListener('click', (e) => {
+            shareTaskId.value = e.currentTarget.dataset.taskId;
+            shareModal.classList.remove('hidden');
+        });
+    });
+
+    cancelShare.addEventListener('click', () => {
+        shareModal.classList.add('hidden');
+    });
+
+    shareForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(shareForm);
+        const data = {
+            username: formData.get('username'),
+            can_edit: formData.get('can_edit') === 'on'
+        };
+
+        try {
+            const response = await fetch(`/api/tasks/${shareTaskId.value}/share`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                shareModal.classList.add('hidden');
+                shareForm.reset();
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Failed to share task');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to share task');
+        }
+    });
+
+    // Filter and sort
+    filter.addEventListener('change', () => {
+        location.reload();
+    });
+
+    sort.addEventListener('change', () => {
+        location.reload();
+    });
+});
+</script>
+{% endblock %} 
