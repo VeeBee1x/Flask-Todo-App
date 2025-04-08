@@ -3,6 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from os import environ
 from dotenv import load_dotenv
+import pytz
+from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,7 +14,7 @@ db = SQLAlchemy()
 DB_NAME = "database.db"
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
-login_manager.login_message_category = 'info'
+
 
 def create_app():
     app = Flask(__name__)
@@ -19,13 +22,16 @@ def create_app():
     # Get DATABASE_URL from environment or use SQLite as fallback
     DATABASE_URL = environ.get('DATABASE_URL', f'sqlite:///{DB_NAME}')
     
-    # Fix Postgres URL format if needed
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    # # Fix Postgres URL format if needed
+    # if DATABASE_URL.startswith("postgres://"):
+    #     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
     
     app.config['SECRET_KEY'] = environ.get('SECRET_KEY', 'your-secret-key')
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # csrf = CSRFProtect(app)
+    # csrf.init_app(app)
+    # Set the session cookie name to 'session'
     
     # Initialize extensions
     db.init_app(app)
@@ -48,4 +54,9 @@ def create_app():
     def load_user(id):
         return User.query.get(int(id))
     
+
+    @app.template_filter('localtime')
+    def localtime_filter(utc_dt):
+        local_tz = pytz.timezone('Europe/Stockholm')  # Or your local time zone
+        return utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz).strftime('%Y-%m-%d %H:%M')
     return app

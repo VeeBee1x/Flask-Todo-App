@@ -64,7 +64,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-white">{{ activity.description }}</p>
-                    <p class="text-xs text-gray-400">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p class="text-xs text-gray-400">{{ activity.created_at|localtime }}</p>
                 </div>
             </div>
             {% endfor %}

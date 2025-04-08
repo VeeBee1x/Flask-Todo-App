@@ -5,12 +5,38 @@ from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash, generate_password_hash
 from . import db
 
+
+from datetime import datetime
+
 views = Blueprint('views', __name__)
 
-@views.route('/')
+@views.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
-  return render_template("main/dashboard.html", user=current_user)
+  tasks = Todo.query.filter_by(user_id=current_user.id).order_by(Todo.due_date).all()
+  if request.method == 'POST':
+    title = request.form.get('title')
+    description = request.form.get('description')
+    due_date_str = request.form.get('due_date')
+    priority = request.form.get('priority')
+    completed = request.form.get('completed') == 'on'
+
+    due_date = None
+    if due_date_str:
+        try:
+            due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            flash('Invalid due date format.', category='error')
+    
+            return render_template('main/dashboard.html', tasks=tasks)
+
+    new_todo = Todo(title=title, description=description, due_date=due_date, priority=priority, completed=completed, user_id=current_user.id)
+    db.session.add(new_todo)
+    db.session.commit()
+    flash('Todo created successfully!', category='success')
+    return redirect(url_for('views.home'))
+
+  return render_template("main/dashboard.html", user=current_user, tasks=tasks)
 
 @views.route('/profile')
 @login_required
@@ -92,4 +118,16 @@ def update_profile():
 
 @views.route('/settings')
 def settings():
-  return render_template("settings.html", user=current_user)
+  return render_template("main/settings.html", user=current_user)
+
+@views.route('/delete_task/<int:task_id>', methods=['POST'])
+
+@views.route('/delete-task', methods=['POST'])
+def delete_task():
+    # Handle the deletion logic
+    task_id = request.json.get('task_id')
+    if task_id:
+        # Delete the task from the database or wherever it's stored
+        return jsonify({"message": "Task deleted successfully!"})
+    return jsonify({"error": "Task not found!"}), 404
+
