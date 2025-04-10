@@ -120,14 +120,16 @@ def update_profile():
 def settings():
   return render_template("main/settings.html", user=current_user)
 
-@views.route('/delete_task/<int:task_id>', methods=['POST'])
+@views.route('/task/delete/<int:task_id>', methods=['POST'])
+@login_required
+def delete_task(task_id):
+    task = Todo.query.get_or_404(task_id)
 
-@views.route('/delete-task', methods=['POST'])
-def delete_task():
-    # Handle the deletion logic
-    task_id = request.json.get('task_id')
-    if task_id:
-        # Delete the task from the database or wherever it's stored
-        return jsonify({"message": "Task deleted successfully!"})
-    return jsonify({"error": "Task not found!"}), 404
+    if task.user_id != current_user.id:
+        flash('You do not have permission to delete this task.', category='error')
+        return redirect(url_for('views.home'))
 
+    db.session.delete(task)
+    db.session.commit()
+    flash('Task deleted successfully.', category='success')
+    return redirect(url_for('views.home'))
