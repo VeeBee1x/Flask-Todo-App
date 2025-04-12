@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
 from flask_login import login_required, current_user
-from .models import Todo, User
-from datetime import datetime, timedelta
+from .models import Todo, User, ActivityLog
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import check_password_hash, generate_password_hash
 from . import db
 
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 views = Blueprint('views', __name__)
 
@@ -33,6 +33,17 @@ def home():
     new_todo = Todo(title=title, description=description, due_date=due_date, priority=priority, completed=completed, user_id=current_user.id)
     db.session.add(new_todo)
     db.session.commit()
+
+    # Log the creation
+    activity = ActivityLog(
+        user_id=current_user.id,
+        type='create',
+        description=f'Created task: {new_todo.title}',
+        timestamp = datetime.now(timezone.utc)
+    )
+    db.session.add(activity)
+    db.session.commit()
+
     flash('Todo created successfully!', category='success')
     return redirect(url_for('views.home'))
 
@@ -41,39 +52,26 @@ def home():
 @views.route('/profile')
 @login_required
 def profile():
-    # Get user's todos
     todos = Todo.query.filter_by(user_id=current_user.id).all()
     
-    # Calculate statistics
     stats = {
         'total_tasks': len(todos),
         'active_tasks': len([todo for todo in todos if not todo.completed]),
         'completed_tasks': len([todo for todo in todos if todo.completed])
     }
     
-    # Get recent activities (last 7 days)
-    recent_activities = []
-    for todo in todos:
-        if todo.created_at >= datetime.now(timezone.utc) - timedelta(days=7):
-            recent_activities.append({
-                'type': 'create',
-                'description': f'Created task: {todo.title}',
-                'created_at': todo.created_at
-            })
-        if todo.completed and todo.updated_at >= datetime.now() - timedelta(days=7):
-            recent_activities.append({
-                'type': 'complete',
-                'description': f'Completed task: {todo.title}',
-                'created_at': todo.updated_at
-            })
-    
-    # Sort activities by date
-    recent_activities.sort(key=lambda x: x['created_at'], reverse=True)
-    
+    recent_activities = ActivityLog.query.filter(
+        ActivityLog.user_id == current_user.id,
+        ActivityLog.timestamp >= datetime.utcnow() - timedelta(days=7)
+    ).order_by(ActivityLog.timestamp.desc()).all()
+
     return render_template("main/profile.html", 
                          user=current_user,
                          stats=stats,
                          recent_activities=recent_activities)
+
+    
+
 
 @views.route('/profile/update', methods=['POST'])
 @login_required
@@ -129,7 +127,39 @@ def delete_task(task_id):
         flash('You do not have permission to delete this task.', category='error')
         return redirect(url_for('views.home'))
 
+    # Log the deletion before removing the task
+    activity = ActivityLog(
+        user_id=current_user.id,
+        type='delete',
+        description=f'Deleted task: {task.title}',
+        timestamp=datetime.utcnow()
+    )
+    db.session.add(activity)
+
+    # Now delete the task
     db.session.delete(task)
     db.session.commit()
+
     flash('Task deleted successfully.', category='success')
+    return redirect(url_for('views.home'))
+
+@views.route('/task/complete/<int:task_id>', methods=['POST'])
+@login_required
+def complete_task(task_id):
+    task = Todo.query.get_or_404(task_id)
+    task.completed = True
+    task.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    # Add this logging
+    activity = ActivityLog(
+        user_id=current_user.id,
+        type='complete',
+        description=f'Completed task: {task.title}',
+        timestamp=datetime.utcnow()
+    )
+    db.session.add(activity)
+    db.session.commit()
+
+    flash('Task marked as complete!', category='success')
     return redirect(url_for('views.home'))
