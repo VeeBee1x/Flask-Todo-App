@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from . import db
 
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 views = Blueprint('views', __name__)
 
@@ -54,7 +54,7 @@ def profile():
     # Get recent activities (last 7 days)
     recent_activities = []
     for todo in todos:
-        if todo.created_at >= datetime.now() - timedelta(days=7):
+        if todo.created_at >= datetime.now(timezone.utc) - timedelta(days=7):
             recent_activities.append({
                 'type': 'create',
                 'description': f'Created task: {todo.title}',
