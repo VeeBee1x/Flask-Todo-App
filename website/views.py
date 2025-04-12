@@ -163,3 +163,12 @@ def complete_task(task_id):
 
     flash('Task marked as complete!', category='success')
     return redirect(url_for('views.home'))
+
+
+@views.route('/profile/clear-history', methods=['POST'])
+@login_required
+def clear_history():
+    ActivityLog.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    flash('Activity history cleared.', category='success')
+    return redirect(url_for('views.profile'))
