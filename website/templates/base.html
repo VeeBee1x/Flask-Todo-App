@@ -2,7 +2,6 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='img/veebee3.ico') }}" type="image/x-icon">
     <title>{% block title %}Todo List App{% endblock %}</title>
@@ -39,7 +38,10 @@
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ url_for('views.home') }}" class="text-2xl font-bold text-primary-400 hover:text-primary-300 transition-colors">Todo App</a>
+                        <a href="{% if current_user.is_authenticated %}{{ url_for('views.home') }}{% else %}{{ url_for('auth.login') }}{% endif %}" 
+                           class="text-2xl font-bold text-primary-400 hover:text-primary-300 transition-colors">
+                            Todo App
+                        </a>
                     </div>
                     {% if current_user.is_authenticated %}
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -98,4 +100,4 @@
 
     {% block scripts %}{% endblock %}
 </body>
-</html> 
+</html>
