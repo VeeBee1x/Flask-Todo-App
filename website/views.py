@@ -132,7 +132,7 @@ def delete_task(task_id):
         user_id=current_user.id,
         type='delete',
         description=f'Deleted task: {task.title}',
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     db.session.add(activity)
 
@@ -148,7 +148,7 @@ def delete_task(task_id):
 def complete_task(task_id):
     task = Todo.query.get_or_404(task_id)
     task.completed = True
-    task.updated_at = datetime.utcnow()
+    task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
     # Add this logging
@@ -156,7 +156,7 @@ def complete_task(task_id):
         user_id=current_user.id,
         type='complete',
         description=f'Completed task: {task.title}',
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     db.session.add(activity)
     db.session.commit()
@@ -172,3 +172,46 @@ def clear_history():
     db.session.commit()
     flash('Activity history cleared.', category='success')
     return redirect(url_for('views.profile'))
+
+@views.route('/task/edit/<int:task_id>', methods=['POST'])
+@login_required
+def edit_task(task_id):
+    task = Todo.query.get_or_404(task_id)
+
+    if task.user_id != current_user.id:
+        flash('You do not have permission to edit this task.', category='error')
+        return redirect(url_for('views.home'))
+
+    title = request.form.get('title')
+    description = request.form.get('description')
+    due_date_str = request.form.get('due_date')
+    priority = request.form.get('priority')
+    completed = request.form.get('completed') == 'on'
+
+    if due_date_str:
+        try:
+            task.due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            flash('Invalid due date format.', category='error')
+            return redirect(url_for('views.home'))
+
+    task.title = title
+    task.description = description
+    task.priority = priority
+    task.completed = completed
+    task.updated_at = datetime.utcnow()
+
+    db.session.commit()
+
+    # Log the edit
+    activity = ActivityLog(
+        user_id=current_user.id,
+        type='edit',
+        description=f'Edited task: {task.title}',
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.session.add(activity)
+    db.session.commit()
+
+    flash('Task updated successfully!', category='success')
+    return redirect(url_for('views.home'))
