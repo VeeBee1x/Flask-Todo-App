@@ -162,5 +162,100 @@
 
 {% block scripts %}
 <script>
+    // Add this code to the script block in dashboard.html
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all task checkboxes
+    const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
+    
+    // Add event listener to each checkbox
+    taskCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const taskId = this.dataset.taskId;
+        const taskItem = this.closest('.task-item');
+        const taskTitle = taskItem.querySelector('h3');
+        
+        if (this.checked) {
+          // Handle task completion
+          markTaskAsCompleted(taskId, taskItem, taskTitle);
+        } else {
+          // Handle task uncompleting
+          confirmUncompleteTask(taskId, taskItem, taskTitle, this);
+        }
+      });
+    });
+  });
+  
+  // Function to mark task as completed
+  function markTaskAsCompleted(taskId, taskItem, taskTitle) {
+    // Send AJAX request to mark task as completed
+    fetch(`/task/complete/${taskId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        // Update UI to show completed status
+        taskItem.classList.add('bg-gray-700/50');
+        taskItem.classList.remove('bg-gray-700');
+        taskTitle.classList.add('line-through', 'text-gray-400');
+        
+        // Show success message
+        showNotification('Task marked as completed!', 'success');
+      } else {
+        throw new Error('Failed to update task');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('Error updating task', 'error');
+    });
+  }
+  
+  // Function to confirm and handle uncompleting a task
+  function confirmUncompleteTask(taskId, taskItem, taskTitle, checkbox) {
+    // Create confirmation dialog
+    if (confirm('Are you sure you want to mark this task as not completed?')) {
+      // Send AJAX request to mark task as not completed
+      fetch(`/task/uncomplete/${taskId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          // Update UI to show active status
+          taskItem.classList.remove('bg-gray-700/50');
+          taskItem.classList.add('bg-gray-700');
+          taskTitle.classList.remove('line-through', 'text-gray-400');
+          
+          // Show success message
+          showNotification('Task marked as not completed', 'success');
+        } else {
+          // Recheck the checkbox if there was an error
+          checkbox.checked = true;
+          throw new Error('Failed to update task');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error updating task', 'error');
+        // Recheck the checkbox
+        checkbox.checked = true;
+      });
+    } else {
+      // If user cancels, revert the checkbox
+      checkbox.checked = true;
+    }
+  }
+  
+  // Helper function to show notifications
+  function showNotification(message, type) {
+    // You can improve this to use a toast notification system
+    // For now, we'll just use flash messages or console
+    console.log(`${type}: ${message}`);
+  }
 </script>
 {% endblock %}

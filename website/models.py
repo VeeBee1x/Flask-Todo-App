@@ -18,8 +18,10 @@ class Todo(db.Model):
     priority = db.Column(db.String(50), nullable=False)
     completed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime(timezone=True), default=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=func.now(), onupdate=func.now())
     due_date = db.Column(db.DateTime)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
 
 class ActivityLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -143,26 +143,26 @@ def delete_task(task_id):
     flash('Task deleted successfully.', category='success')
     return redirect(url_for('views.home'))
 
-@views.route('/task/complete/<int:task_id>', methods=['POST'])
-@login_required
-def complete_task(task_id):
-    task = Todo.query.get_or_404(task_id)
-    task.completed = True
-    task.updated_at = datetime.now(timezone.utc)
-    db.session.commit()
+# @views.route('/task/complete/<int:task_id>', methods=['POST'])
+# @login_required
+# def complete_task(task_id):
+#     task = Todo.query.get_or_404(task_id)
+#     task.completed = True
+#     task.updated_at = datetime.now(timezone.utc)
+#     db.session.commit()
 
-    # Add this logging
-    activity = ActivityLog(
-        user_id=current_user.id,
-        type='complete',
-        description=f'Completed task: {task.title}',
-        timestamp=datetime.now(timezone.utc)
-    )
-    db.session.add(activity)
-    db.session.commit()
+#     # Add this logging
+#     activity = ActivityLog(
+#         user_id=current_user.id,
+#         type='complete',
+#         description=f'Completed task: {task.title}',
+#         timestamp=datetime.now(timezone.utc)
+#     )
+#     db.session.add(activity)
+#     db.session.commit()
 
-    flash('Task marked as complete!', category='success')
-    return redirect(url_for('views.home'))
+#     flash('Task marked as complete!', category='success')
+#     return redirect(url_for('views.home'))
 
 
 @views.route('/profile/clear-history', methods=['POST'])
@@ -215,3 +215,61 @@ def edit_task(task_id):
 
     flash('Task updated successfully!', category='success')
     return redirect(url_for('views.home'))
+
+@views.route('/task/complete/<int:task_id>', methods=['POST'])
+@login_required
+def complete_task(task_id):
+    task = Todo.query.get_or_404(task_id)
+    
+    if task.user_id != current_user.id:
+        if request.content_type == 'application/json':
+            return jsonify({'success': False, 'message': 'You do not have permission to update this task.'}), 403
+        flash('You do not have permission to update this task.', category='error')
+        return redirect(url_for('views.home'))
+    
+    task.completed = True
+    task.updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    # Add activity log
+    activity = ActivityLog(
+        user_id=current_user.id,
+        type='complete',
+        description=f'Completed task: {task.title}',
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.session.add(activity)
+    db.session.commit()
+
+    # Handle AJAX requests
+    if request.content_type == 'application/json':
+        return jsonify({'success': True, 'message': 'Task marked as complete'})
+    
+    # Handle form submissions
+    flash('Task marked as complete!', category='success')
+    return redirect(url_for('views.home'))
+
+
+@views.route('/task/uncomplete/<int:task_id>', methods=['POST'])
+@login_required
+def uncomplete_task(task_id):
+    task = Todo.query.get_or_404(task_id)
+    
+    if task.user_id != current_user.id:
+        return jsonify({'success': False, 'message': 'You do not have permission to update this task.'}), 403
+    
+    task.completed = False
+    task.updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    # Add activity log for uncompleting task
+    activity = ActivityLog(
+        user_id=current_user.id,
+        type='uncomplete',
+        description=f'Marked task as not completed: {task.title}',
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.session.add(activity)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Task marked as not completed'})

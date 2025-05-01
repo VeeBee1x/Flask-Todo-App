@@ -28,7 +28,7 @@ def create_app():
     
     app.config['SECRET_KEY'] = environ.get('SECRET_KEY', 'your-secret-key')
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
     # csrf = CSRFProtect(app)
     # csrf.init_app(app)
     # Set the session cookie name to 'session'
