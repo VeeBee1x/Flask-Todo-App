@@ -257,5 +257,109 @@ document.addEventListener('DOMContentLoaded', function() {
     // For now, we'll just use flash messages or console
     console.log(`${type}: ${message}`);
   }
+
+    // Share Task Modal
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle task completion checkboxes
+    const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
+    
+    // Add event listener to each checkbox
+    taskCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const taskId = this.dataset.taskId;
+        const taskItem = this.closest('.task-item');
+        const taskTitle = taskItem.querySelector('h3');
+        
+        if (this.checked) {
+          // Handle task completion
+          markTaskAsCompleted(taskId, taskItem, taskTitle);
+        } else {
+          // Handle task uncompleting
+          confirmUncompleteTask(taskId, taskItem, taskTitle, this);
+        }
+      });
+    });
+    
+    // Setup the share task modal
+    const shareButtons = document.querySelectorAll('.share-task');
+    const shareModal = document.getElementById('shareModal');
+    const shareForm = document.getElementById('shareForm');
+    const cancelShareButton = document.getElementById('cancelShare');
+    const shareTaskIdField = document.getElementById('shareTaskId');
+    
+    // Show modal when share button is clicked
+    shareButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const taskId = this.dataset.taskId;
+        shareTaskIdField.value = taskId;
+        shareModal.classList.remove('hidden');
+      });
+    });
+    
+    // Hide modal when cancel is clicked
+    cancelShareButton.addEventListener('click', function() {
+      shareModal.classList.add('hidden');
+      shareForm.reset();
+    });
+    
+    // Handle form submission
+    shareForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const taskId = shareTaskIdField.value;
+      const username = document.getElementById('username').value;
+      const canEdit = document.querySelector('input[name="can_edit"]').checked;
+      
+      // Send share request via AJAX
+      fetch('/task/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskId: taskId,
+          username: username,
+          canEdit: canEdit
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Show success message
+          showNotification(data.message, 'success');
+          // Close the modal
+          shareModal.classList.add('hidden');
+          shareForm.reset();
+        } else {
+          // Show error message
+          showNotification(data.message, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error sharing task', 'error');
+      });
+    });
+  });
+  
+  // Helper function to show notifications
+  function showNotification(message, type) {
+    // Create a notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-md text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg transition-opacity duration-500`;
+    notification.textContent = message;
+    
+    // Add to DOM
+    document.body.appendChild(notification);
+    
+    // Remove after a delay
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 500);
+    }, 3000);
+  }
 </script>
 {% endblock %}

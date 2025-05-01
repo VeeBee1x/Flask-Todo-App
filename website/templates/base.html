@@ -49,6 +49,10 @@
                            class="{% if request.endpoint == 'views.home' %}border-primary-500 text-white{% else %}border-transparent text-gray-300 hover:border-gray-300 hover:text-white{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
                             Dashboard
                         </a>
+                        <a href="{{ url_for('views.shared_tasks') }}"
+                           class="{% if request.endpoint == 'views.profile' %}border-primary-500 text-white{% else %}border-transparent text-gray-300 hover:border-gray-300 hover:text-white{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                            Shared Tasks
+                        </a>
                         <a href="{{ url_for('views.profile') }}"
                            class="{% if request.endpoint == 'views.profile' %}border-primary-500 text-white{% else %}border-transparent text-gray-300 hover:border-gray-300 hover:text-white{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
                             Profile
