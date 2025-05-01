@@ -127,6 +127,9 @@ def delete_task(task_id):
         flash('You do not have permission to delete this task.', category='error')
         return redirect(url_for('views.home'))
 
+    # First, delete any shared task records
+    SharedTask.query.filter_by(task_id=task_id).delete()
+    
     # Log the deletion before removing the task
     activity = ActivityLog(
         user_id=current_user.id,
@@ -148,7 +151,20 @@ def delete_task(task_id):
 def complete_task(task_id):
     task = Todo.query.get_or_404(task_id)
     
-    if task.user_id != current_user.id:
+    # Check if the user owns the task or has edit permissions
+    user_has_permission = task.user_id == current_user.id
+    
+    if not user_has_permission:
+        # Check if task is shared with the user and with edit permissions
+        shared_task = SharedTask.query.filter_by(
+            task_id=task_id,
+            shared_with_id=current_user.id,
+            can_edit=True
+        ).first()
+        
+        user_has_permission = shared_task is not None
+    
+    if not user_has_permission:
         if request.content_type == 'application/json':
             return jsonify({'success': False, 'message': 'You do not have permission to update this task.'}), 403
         flash('You do not have permission to update this task.', category='error')
@@ -182,7 +198,20 @@ def complete_task(task_id):
 def uncomplete_task(task_id):
     task = Todo.query.get_or_404(task_id)
     
-    if task.user_id != current_user.id:
+    # Check if the user owns the task or has edit permissions
+    user_has_permission = task.user_id == current_user.id
+    
+    if not user_has_permission:
+        # Check if task is shared with the user and with edit permissions
+        shared_task = SharedTask.query.filter_by(
+            task_id=task_id,
+            shared_with_id=current_user.id,
+            can_edit=True
+        ).first()
+        
+        user_has_permission = shared_task is not None
+    
+    if not user_has_permission:
         return jsonify({'success': False, 'message': 'You do not have permission to update this task.'}), 403
     
     task.completed = False
@@ -253,9 +282,6 @@ def edit_task(task_id):
     return redirect(url_for('views.home'))
 
 
-
-
-
 @views.route('/task/share', methods=['POST'])
 @login_required
 def share_task():
@@ -267,6 +293,12 @@ def share_task():
     # Validate data
     if not task_id or not username:
         return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+    
+    # Ensure task_id is an integer
+    try:
+        task_id = int(task_id)
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'Invalid task ID'}), 400
     
     # Find the task
     task = Todo.query.get(task_id)
@@ -349,7 +381,7 @@ def update_shared_task(task_id):
     ).first()
     
     # Verify permission
-    if not shared_task or (not shared_task.can_edit and task.user_id != current_user.id):
+    if not shared_task or not shared_task.can_edit:
         flash('You do not have permission to edit this task.', category='error')
         return redirect(url_for('views.shared_tasks'))
     
