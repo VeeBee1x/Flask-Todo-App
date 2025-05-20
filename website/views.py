@@ -10,6 +10,7 @@ from datetime import datetime
 
 views = Blueprint('views', __name__)
 
+# Startsida 
 @views.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
@@ -34,7 +35,7 @@ def home():
     db.session.add(new_todo)
     db.session.commit()
 
-    # Log the creation
+    # Logga skapandet av todon
     activity = ActivityLog(
         user_id=current_user.id,
         type='create',
@@ -49,6 +50,7 @@ def home():
 
   return render_template("main/dashboard.html", user=current_user, tasks=tasks)
 
+# Profil
 @views.route('/profile')
 @login_required
 def profile():
@@ -71,6 +73,7 @@ def profile():
                          recent_activities=recent_activities)
 
 
+# Historik
 @views.route('/history')
 def history():
     recent_activities = ActivityLog.query.filter(
@@ -83,6 +86,7 @@ def history():
                             recent_activities=recent_activities)
 
 
+# Uppdatera användarprofil
 @views.route('/profile/update', methods=['POST'])
 @login_required
 def update_profile():
@@ -93,7 +97,7 @@ def update_profile():
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
 
-        # Check if email is already taken by another user
+        # Kolla om mailen redan används
         if email != current_user.email:
             user = User.query.filter_by(email=email).first()
             if user:
