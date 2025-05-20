@@ -70,7 +70,17 @@ def profile():
                          stats=stats,
                          recent_activities=recent_activities)
 
-    
+
+@views.route('/history')
+def history():
+    recent_activities = ActivityLog.query.filter(
+        ActivityLog.user_id == current_user.id,
+        ActivityLog.timestamp >= datetime.utcnow() - timedelta(days=7)
+    ).order_by(ActivityLog.timestamp.desc()).all()
+
+    return render_template("main/history.html", 
+                            user=current_user,
+                            recent_activities=recent_activities)
 
 
 @views.route('/profile/update', methods=['POST'])

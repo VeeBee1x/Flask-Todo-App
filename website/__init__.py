@@ -2,13 +2,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from os import environ
-from dotenv import load_dotenv
 import pytz
-from flask_wtf import FlaskForm
-from flask_wtf.csrf import CSRFProtect
 
-# Load environment variables from .env file
-load_dotenv()
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
