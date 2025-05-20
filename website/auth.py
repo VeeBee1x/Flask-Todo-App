@@ -4,11 +4,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .models import User
 from . import db
 from flask_login import login_user, logout_user
-# from itsdangerous import URLSafeTimedSerializer
-# from datetime import datetime, timedelta
-# import smtplib
-# from email.mime.text import MIMEText
-# from email.mime.multipart import MIMEMultipart
 
 auth = Blueprint('auth', __name__)
 
