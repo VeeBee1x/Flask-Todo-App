@@ -7,7 +7,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
-    username = db.Column(db.String(150))
+    username = db.Column(db.String(150), unique=True)
     created_at = db.Column(db.DateTime(timezone=True), default=func.now())
     todos = db.relationship('Todo', backref='user', lazy=True)
     shared_with_me = db.relationship('SharedTask', backref='shared_user', lazy=True, foreign_keys='SharedTask.shared_with_id')
@@ -27,7 +27,7 @@ class Todo(db.Model):
 class ActivityLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    type = db.Column(db.String(20))  # e.g., 'create', 'complete', 'delete'
+    type = db.Column(db.String(20))
     description = db.Column(db.String(255))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 

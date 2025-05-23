@@ -4,7 +4,7 @@ from .models import Todo, User, ActivityLog, SharedTask
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import check_password_hash, generate_password_hash
 from . import db
-
+from sqlalchemy import func
 
 from datetime import datetime
 
@@ -97,6 +97,13 @@ def update_profile():
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
 
+
+        username_lower = username.lower()
+        username_exists = User.query.filter(func.lower(User.username) == username_lower).first()
+        if username_exists and username != current_user.username:
+            flash('Username already exists.', category='error')
+            return redirect(url_for('views.profile'))
+
         # Kolla om mailen redan används
         if email != current_user.email:
             user = User.query.filter_by(email=email).first()
@@ -127,10 +134,6 @@ def update_profile():
         db.session.commit()
         flash('Profile updated successfully!', category='success')
         return redirect(url_for('views.profile'))
-
-@views.route('/settings')
-def settings():
-  return render_template("main/settings.html", user=current_user)
 
 @views.route('/task/delete/<int:task_id>', methods=['POST'])
 @login_required
