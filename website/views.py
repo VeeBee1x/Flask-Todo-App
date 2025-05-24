@@ -111,7 +111,7 @@ def update_profile():
                 flash('Email already exists.', category='error')
                 return redirect(url_for('views.profile'))
 
-        # Validate current password if trying to change password
+        # Byta lösenord
         if new_password:
             if not check_password_hash(current_user.password, current_password):
                 flash('Current password is incorrect.', category='error')
@@ -125,7 +125,7 @@ def update_profile():
                 flash('New password must be at least 7 characters.', category='error')
                 return redirect(url_for('views.profile'))
 
-        # Update user information
+        # Uppdatera användaren
         current_user.username = username
         current_user.email = email
         if new_password:
@@ -144,10 +144,9 @@ def delete_task(task_id):
         flash('You do not have permission to delete this task.', category='error')
         return redirect(url_for('views.home'))
 
-    # First, delete any shared task records
+    # Ta bort delate uppgiften
     SharedTask.query.filter_by(task_id=task_id).delete()
     
-    # Log the deletion before removing the task
     activity = ActivityLog(
         user_id=current_user.id,
         type='delete',
@@ -156,7 +155,6 @@ def delete_task(task_id):
     )
     db.session.add(activity)
 
-    # Now delete the task
     db.session.delete(task)
     db.session.commit()
 
@@ -168,11 +166,9 @@ def delete_task(task_id):
 def complete_task(task_id):
     task = Todo.query.get_or_404(task_id)
     
-    # Check if the user owns the task or has edit permissions
     user_has_permission = task.user_id == current_user.id
     
     if not user_has_permission:
-        # Check if task is shared with the user and with edit permissions
         shared_task = SharedTask.query.filter_by(
             task_id=task_id,
             shared_with_id=current_user.id,
@@ -191,7 +187,6 @@ def complete_task(task_id):
     task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
-    # Add activity log
     activity = ActivityLog(
         user_id=current_user.id,
         type='complete',
@@ -205,7 +200,6 @@ def complete_task(task_id):
     if request.content_type == 'application/json':
         return jsonify({'success': True, 'message': 'Task marked as complete'})
     
-    # Handle form submissions
     flash('Task marked as complete!', category='success')
     return redirect(url_for('views.home'))
 
@@ -215,11 +209,9 @@ def complete_task(task_id):
 def uncomplete_task(task_id):
     task = Todo.query.get_or_404(task_id)
     
-    # Check if the user owns the task or has edit permissions
     user_has_permission = task.user_id == current_user.id
     
     if not user_has_permission:
-        # Check if task is shared with the user and with edit permissions
         shared_task = SharedTask.query.filter_by(
             task_id=task_id,
             shared_with_id=current_user.id,
@@ -235,7 +227,6 @@ def uncomplete_task(task_id):
     task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
-    # Add activity log for uncompleting task
     activity = ActivityLog(
         user_id=current_user.id,
         type='uncomplete',
@@ -255,50 +246,6 @@ def clear_history():
     flash('Activity history cleared.', category='success')
     return redirect(url_for('views.profile'))
 
-@views.route('/task/edit/<int:task_id>', methods=['POST'])
-@login_required
-def edit_task(task_id):
-    task = Todo.query.get_or_404(task_id)
-
-    if task.user_id != current_user.id:
-        flash('You do not have permission to edit this task.', category='error')
-        return redirect(url_for('views.home'))
-
-    title = request.form.get('title')
-    description = request.form.get('description')
-    due_date_str = request.form.get('due_date')
-    priority = request.form.get('priority')
-    completed = request.form.get('completed') == 'on'
-
-    if due_date_str:
-        try:
-            task.due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            flash('Invalid due date format.', category='error')
-            return redirect(url_for('views.home'))
-
-    task.title = title
-    task.description = description
-    task.priority = priority
-    task.completed = completed
-    task.updated_at = datetime.utcnow()
-
-    db.session.commit()
-
-    # Log the edit
-    activity = ActivityLog(
-        user_id=current_user.id,
-        type='edit',
-        description=f'Edited task: {task.title}',
-        timestamp=datetime.now(timezone.utc)
-    )
-    db.session.add(activity)
-    db.session.commit()
-
-    flash('Task updated successfully!', category='success')
-    return redirect(url_for('views.home'))
-
-
 @views.route('/task/share', methods=['POST'])
 @login_required
 def share_task():
@@ -307,31 +254,25 @@ def share_task():
     username = data.get('username')
     can_edit = data.get('canEdit', False)
     
-    # Validate data
     if not task_id or not username:
         return jsonify({'success': False, 'message': 'Missing required fields'}), 400
     
-    # Ensure task_id is an integer
     try:
         task_id = int(task_id)
     except (ValueError, TypeError):
         return jsonify({'success': False, 'message': 'Invalid task ID'}), 400
     
-    # Find the task
     task = Todo.query.get(task_id)
     if not task:
         return jsonify({'success': False, 'message': 'Task not found'}), 404
     
-    # Verify task ownership
     if task.user_id != current_user.id:
         return jsonify({'success': False, 'message': 'You do not have permission to share this task'}), 403
     
-    # Find the user to share with
     user = User.query.filter_by(username=username).first()
     if not user:
         return jsonify({'success': False, 'message': 'User not found'}), 404
     
-    # Check if task is already shared with this user
     existing_share = SharedTask.query.filter_by(
         task_id=task_id,
         shared_with_id=user.id
@@ -340,7 +281,6 @@ def share_task():
     if existing_share:
         return jsonify({'success': False, 'message': 'Task already shared with this user'}), 400
     
-    # Create the share
     shared_task = SharedTask(
         task_id=task_id,
         shared_by_id=current_user.id,
@@ -350,7 +290,6 @@ def share_task():
     
     db.session.add(shared_task)
     
-    # Log the activity
     activity = ActivityLog(
         user_id=current_user.id,
         type='share',
@@ -365,7 +304,6 @@ def share_task():
 @views.route('/shared-with-me', methods=['GET'])
 @login_required
 def shared_tasks():
-    # Get all tasks shared with the current user
     shared_tasks_data = (
         db.session.query(Todo, SharedTask, User)
         .join(SharedTask, Todo.id == SharedTask.task_id)
@@ -374,7 +312,6 @@ def shared_tasks():
         .all()
     )
     
-    # Format the results for display
     tasks = []
     for todo, shared_task, shared_by in shared_tasks_data:
         tasks.append({
@@ -388,21 +325,17 @@ def shared_tasks():
 @views.route('/task/update-shared/<int:task_id>', methods=['POST'])
 @login_required
 def update_shared_task(task_id):
-    # Find the task
     task = Todo.query.get_or_404(task_id)
     
-    # Find the share record
     shared_task = SharedTask.query.filter_by(
         task_id=task_id,
         shared_with_id=current_user.id
     ).first()
     
-    # Verify permission
     if not shared_task or not shared_task.can_edit:
         flash('You do not have permission to edit this task.', category='error')
         return redirect(url_for('views.shared_tasks'))
     
-    # Update the task (similar to edit_task function)
     title = request.form.get('title')
     description = request.form.get('description')
     due_date_str = request.form.get('due_date')
@@ -423,8 +356,7 @@ def update_shared_task(task_id):
     task.updated_at = datetime.utcnow()
     
     db.session.commit()
-    
-    # Log the edit
+
     activity = ActivityLog(
         user_id=current_user.id,
         type='edit_shared',
